@@ -1,93 +1,133 @@
-# Blockchain Project: NFT-Based Ticketing System
+# NFT-Based Ticketing System
 
-## 👥 Contributors
-- **Bhanu Chaitanya Jasti**
+## Contributors
 - **Dhanushwi Arava**
+- **Bhanu Chaitanya Jasti**
 
 ---
 
-## Week 1 Progress: Soulbound Ticketing
+## Week 1: Core Logic & Soulbound NFT
 
-### 1. Smart Contract Development – `SoulboundTicket.sol`
-- Implemented a custom ERC-721 ticket that is non-transferable.
-- Overrode `transferFrom` and `safeTransferFrom` functions to revert on transfer attempts.
-- Created `mintTicket(address recipient, string memory uri)` for minting tickets with metadata.
+### 1. Smart Contract Development
+- `SoulboundTicket.sol`: A custom ERC721 ticket that prevents transfers after minting.
+  - Overrides `transferFrom` and `safeTransferFrom` to enforce non-transferability.
+  - Minting is done via `mintTicket(address, string memory uri)`.
 
-### 2. Hardhat Environment Setup
-- Initialized the Hardhat project using `npx hardhat`.
-- Installed essential packages:
-  - `ethers`, `hardhat-toolbox`, `chai`, `dotenv`.
-- Created deployment script: `scripts/deploy-soulbound.js`.
+### 2. Hardhat + Infura Setup
+- Initialized Hardhat and configured `.env` with:
+  - `SEPOLIA_RPC_URL` (from Infura)
+  - `PRIVATE_KEY` (MetaMask)
+  - `SEPOLIA_RECIPIENT`
 
-### 3. Unit Testing
-- Developed `test/SoulboundTicket.test.js`:
-  - Minting ticket succeeds.
-  - Transfers revert with `"Soulbound: tokens cannot be transferred"`.
+### 3. Deployment & Minting Scripts
+- `scripts/deploy-soulbound.js` - deployed to Sepolia  
+- `scripts/mint-soulbound.js` - minted to recipient via Sepolia
 
-### 4. Local Blockchain Deployment & Verification
-- Ran local Hardhat testnet using `npx hardhat node`.
-- Deployed and verified:
-  - Minting worked via console interaction.
-  - Ownership and metadata retrieval confirmed.
-  - Transfer attempts correctly reverted.
+### 4. Metadata Creation
+- Added `metadata/soulbound-ticket.json` with:
+  - `name`, `description`, `image`, and `attributes`
+
+### 5. Real Deployment to Sepolia
+- Used Infura + MetaMask to deploy contracts and mint tickets on Sepolia  
+- Verified gas costs, ownership, and metadata
+
+### 6. Unit Testing
+- `test/SoulboundTicket.test.js`
+  - Minting works
+  - Transfers are reverted with reason string
 
 ---
 
-## Week 2 Progress: Multi-Model NFT Ticketing
+## Week 2: Multiple Ticketing Models
 
-### 1. Developed 5 Ticket Variants
+### 1. Five NFT Models Developed
 
-| Ticket Type         | Contract File             | Key Feature |
-|---------------------|---------------------------|-------------|
-| Standard ERC-721    | `ERC721Ticket.sol`        | Basic transfer-enabled NFT |
-| Soulbound           | `SoulboundTicket.sol`     | Transfer-disabled NFT |
-| Royalty-Enforced    | `RoyaltyTicket.sol`       | EIP-2981 compliant resale royalties |
-| Dynamic Metadata    | `DynamicTicket.sol`       | Metadata updates after use |
-| One-Time Ticket     | `StandardTicket.sol`      | Minimalist, single-use ticket |
+| Ticket Type         | Solidity File           | Feature                        |
+|---------------------|--------------------------|--------------------------------|
+| Soulbound Ticket    | `SoulboundTicket.sol`    | Non-transferable               |
+| Royalty Ticket      | `RoyaltyTicket.sol`      | Resale royalties (EIP-2981)    |
+| Dynamic Ticket      | `DynamicTicket.sol`      | URI change after use           |
+| ERC721 Ticket       | `ERC721Ticket.sol`       | Basic transferable ticket      |
+| Standard Ticket     | `StandardTicket.sol`     | Minimal ERC721                 |
 
 ### 2. Deployment Scripts
-- Created dedicated deployment scripts:
-  - `deploy-erc721.js`, `deploy-soulbound.js`, `deploy-royalty.js`, `deploy-dynamic.js`, `deploy-standard.js`.
+- `deploy-soulbound.js`
+- `deploy-royalty.js`
+- `deploy-dynamic.js`
+- `deploy-erc721.js`
+- `deploy-standard.js`
+
+All deployed to Sepolia and logged in `deployed.json`
 
 ### 3. Minting Scripts
-- Local minting for testing:
-  - `mint-local.js`, `mint-soulbound.js`, `mint-royalty.js`, `mint-dynamic.js`.
+- `mint-soulbound.js`
+- `mint-royalty.js`
+- `mint-dynamic.js`
+- `mint-erc721.js`
+- `mint-standard.js`
 
-### 4. Dynamic Metadata Handling
-- `DynamicTicket.sol` uses `markAsUsed()` to update ticket state:
-  - Example: `"ipfs://ticket-active"` → `"ipfs://ticket-used"`.
+All use:
+- `.env` for keys and recipients  
+- `deployed.json` for contract addresses
 
-### 5. Unit Testing – Royalty & Dynamic Tickets
-- `DynamicTicket.test.js`:
-  - Verifies mint and URI update after `markAsUsed()`.
-- `RoyaltyTicket.test.js`:
-  - Validates royalty recipient and percentage via `royaltyInfo()`.
+### 4. Metadata JSON Files
+Files located in `metadata/`:
+- `soulbound-ticket.json`
+- `royalty-ticket.json`
+- `erc721-ticket.json`
+- `standard-ticket.json`
+- `dynamic-ticket.json`
+- `ticket-valid.json`
+- `ticket-used.json`
+
+### 5. Unit Tests Implemented
+- `SoulboundTicket.test.js`
+- `RoyaltyTicket.test.js`
+- `DynamicTicket.test.js`
+
+Tests include:
+- Minting functionality
+- Royalty calculations
+- URI updates after scan
+
+### 6. `mark-used.js` Script
+- Simulates real-world usage by changing URI after an event check-in  
+- Updates metadata from `ticket-valid.json` to `ticket-used.json`
 
 ---
 
-## Research Alignment with Instructor Feedback
-
-Based on the instructor’s suggestion, we are:
-- Prototyping and comparing **multiple NFT ticketing strategies**:
-  - Soulbound NFTs
-  - Royalty-enforced NFTs
-  - Dynamic metadata models
-- Exploring the **security and limitations** of each approach:
-  - Transfer restrictions
-  - Royalty enforcement potential
-  - Real-world usability
-- Planning to integrate **blockchain data analytics**:
-  - E.g., studying resale behavior and transaction patterns from live platforms like GET Protocol or Seatlab.
+## Network: Sepolia Testnet
+- All contracts deployed to Sepolia using Infura  
+- Minting validated using MetaMask addresses
 
 ---
 
-## Week 3–4 Roadmap
+## Tooling Used
+- Hardhat  
+- Ethers.js  
+- Infura  
+- MetaMask  
+- IPFS Metadata (placeholder hashes)  
+- dotenv + fs for environment and file access
 
-- [ ] Set up React frontend with navigation for ticket types.
-- [ ] Integrate MetaMask wallet using `ethers.js`.
-- [ ] Enable minting UI for each ticket variant.
-- [ ] Display NFT metadata, state, and royalty details.
-- [ ] Analyze real blockchain data to validate effectiveness of each model.
+---
+
+## Summary of Contributions
+- Deployed and tested five unique NFT models on Sepolia  
+- Separated and modularized deployment and minting logic  
+- Secured all key and address data in `.env`  
+- Created structured and readable logs for minting and gas usage  
+- Implemented metadata switching to reflect usage status  
+- Created a clean Git branch and commit history for Week 1 and Week 2
+
+---
+
+## Week 3+ Roadmap
+- [ ] Build a React frontend for ticket management  
+- [ ] Enable minting through UI using MetaMask  
+- [ ] Display NFT state, attributes, and ownership  
+- [ ] Host IPFS files and link metadata correctly  
+- [ ] Analyze blockchain events for resale or usage insights
 
 ---
 
@@ -97,15 +137,17 @@ Based on the instructor’s suggestion, we are:
 # Install dependencies
 npm install
 
-# Start local blockchain
+# Start local testnet
 npx hardhat node
 
-# In a new terminal, deploy contract (e.g., Soulbound)
+# Deploy a contract (example)
 npx hardhat run scripts/deploy-soulbound.js --network localhost
-
-# Interact via console
-npx hardhat console --network localhost
 
 # Run unit tests
 npx hardhat test
-```
+
+# Deploy to Sepolia
+npx hardhat run scripts/deploy-royalty.js --network sepolia
+
+# Mint ticket on Sepolia
+npx hardhat run scripts/mint-royalty.js --network sepolia
