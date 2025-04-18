@@ -6,7 +6,7 @@ async function main() {
 
   await ticket.deployed();
 
-  console.log("✅ DynamicTicket deployed to:", ticket.address);
+  console.log("DynamicTicket deployed to:", ticket.address);
 }
 
 main().catch((error) => {

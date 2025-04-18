@@ -1,21 +1,37 @@
 const hre = require("hardhat");
+const fs = require("fs");
+require("dotenv").config();
 
 async function main() {
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // must match the deployed address
-  const Ticket = await hre.ethers.getContractAt("SoulboundTicket", contractAddress);
+  const deployed = JSON.parse(fs.readFileSync("scripts/deployed.json"));
+  const contractAddress = deployed["SoulboundTicket"]["sepolia"];
 
-  const [owner, recipient] = await hre.ethers.getSigners();
+  if (!contractAddress) {
+    throw new Error("SoulboundTicket address not found in deployed.json");
+  }
 
-  const tx = await Ticket.connect(owner).mintTicket(
-    recipient.address,
-    "ipfs://sample-soulbound-metadata.json"
-  );
+  const recipient = process.env.SEPOLIA_RECIPIENT;
+
+  if (!recipient) {
+    throw new Error("SEPOLIA_RECIPIENT is not defined in .env");
+  }
+
+  const metadataURI = "ipfs://QmExampleHash/soulbound-ticket.json";
+  const Ticket = await hre.ethers.getContractAt("contracts/SoulboundTicket.sol:SoulboundTicket", contractAddress);
+
+  const [owner] = await hre.ethers.getSigners();
+
+  console.log("Minting Soulbound Ticket...");
+  console.log(`Recipient: ${recipient}`);
+  console.log(`Metadata URI: ${metadataURI}`);
+
+  const tx = await Ticket.connect(owner).mintTicket(recipient, metadataURI);
   await tx.wait();
 
-  console.log(`🎫 Soulbound Ticket minted to ${recipient.address}`);
+  console.log("Soulbound Ticket minted successfully!");
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error("Minting failed:", error);
   process.exitCode = 1;
 });

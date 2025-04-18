@@ -1,6 +1,7 @@
-const { expect } = require("chai");
 
-describe("RoyaltyTicket", function () {
+  const { expect } = require("chai");
+
+  describe("RoyaltyTicket", function () {
     let contract, owner, user;
   
     beforeEach(async () => {
@@ -20,7 +21,7 @@ describe("RoyaltyTicket", function () {
       await contract.mintTicket(user.address, "ipfs://sample", owner.address, 500);
       const royalty = await contract.royaltyInfo(0, 1000);
       expect(royalty[0]).to.equal(owner.address);
-      expect(royalty[1]).to.equal(50); // 5% of 1000
+      expect(royalty[1].toNumber()).to.equal(50); 
     });
   });
   
