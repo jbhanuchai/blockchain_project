@@ -1,19 +1,43 @@
+require("dotenv").config();
 const hre = require("hardhat");
+const fs = require("fs");
 
 async function main() {
-  const [deployer, recipient] = await hre.ethers.getSigners();
+  const recipient = process.env.SEPOLIA_RECIPIENT;
+  const privateKey = process.env.PRIVATE_KEY;
 
-  const contractAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-  const Ticket = await hre.ethers.getContractAt("DynamicTicket", contractAddress);
+  if (!recipient) {
+    throw new Error("SEPOLIA_RECIPIENT is not defined in .env");
+  }
 
-  const validURI = "ipfs://ticket-valid.json";
-  const tx = await Ticket.mintTicket(recipient.address, validURI);
-  await tx.wait();
+  if (!privateKey) {
+    throw new Error("PRIVATE_KEY is not defined in .env");
+  }
 
-  console.log(`🎫 Dynamic Ticket minted to ${recipient.address}`);
+  const deployed = JSON.parse(fs.readFileSync("scripts/deployed.json"));
+  const contractAddress = deployed["DynamicTicket"]["sepolia"];
+
+  const wallet = new hre.ethers.Wallet(privateKey, hre.ethers.provider);
+  const DynamicTicket = await hre.ethers.getContractAt("DynamicTicket", contractAddress, wallet);
+
+  const metadataURI = "ipfs://QmExampleHash/ticket-valid.json"; 
+
+  console.log(`Using DynamicTicket at: ${contractAddress}`);
+  console.log("Minting Dynamic Ticket...");
+  console.log(`Recipient: ${recipient}`);
+  console.log(`Metadata: ${metadataURI}`);
+
+  try {
+    const gasEstimate = await DynamicTicket.estimateGas.mintTicket(recipient, metadataURI);
+    console.log(`Gas Estimate: ${gasEstimate.toString()}`);
+
+    const tx = await DynamicTicket.mintTicket(recipient, metadataURI);
+    await tx.wait();
+    console.log("Dynamic Ticket minted successfully!");
+  } catch (error) {
+    console.error("Minting failed:", error.reason || error.message || error);
+    process.exit(1);
+  }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main();
