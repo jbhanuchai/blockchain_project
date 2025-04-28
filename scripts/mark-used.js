@@ -1,18 +1,37 @@
+require("dotenv").config();
 const hre = require("hardhat");
+const fs = require("fs");
 
 async function main() {
-  const contractAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-  const Ticket = await hre.ethers.getContractAt("DynamicTicket", contractAddress);
+  const privateKey = process.env.PRIVATE_KEY;
+  if (!privateKey) throw new Error("PRIVATE_KEY missing from .env");
 
-  const usedURI = "ipfs://ticket-used.json"; // placeholder
+  const deployed = JSON.parse(fs.readFileSync("scripts/deployed.json"));
+  const contractAddress = deployed["DynamicTicket"]?.["sepolia"];
 
-  const tx = await Ticket.markAsUsed(0, usedURI); // update tokenId 0
-  await tx.wait();
+  if (!contractAddress) {
+    throw new Error("DynamicTicket sepolia address not found in deployed.json");
+  }
 
-  console.log("🎟️ Ticket #0 marked as used!");
+  const wallet = new hre.ethers.Wallet(privateKey, hre.ethers.provider);
+  const DynamicTicket = await hre.ethers.getContractAt("DynamicTicket", contractAddress, wallet);
+
+  const tokenId = 0; 
+  const newURI = "ipfs://QmExampleHash/ticket-used.json";
+
+  console.log(`Marking Ticket #${tokenId} as USED`);
+  console.log(`New URI: ${newURI}`);
+
+  try {
+    const gasEstimate = await DynamicTicket.estimateGas.markAsUsed(tokenId, newURI);
+    console.log(`Gas Estimate: ${gasEstimate.toString()}`);
+
+    const tx = await DynamicTicket.markAsUsed(tokenId, newURI);
+    await tx.wait();
+    console.log("Ticket metadata updated successfully!");
+  } catch (err) {
+    console.error("Gas estimation failed:", err.reason || err.message || err);
+  }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main();

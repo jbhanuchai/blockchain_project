@@ -1,0 +1,12 @@
+{
+    "name": "Standard NFT Ticket",
+    "description": "A basic transferable ticket for OU Music Fest 2025.",
+    "image": "ipfs://QmExampleHash/standard.png",
+    "attributes": [
+      { "trait_type": "Ticket Type", "value": "Standard" },
+      { "trait_type": "Transferable", "value": "Yes" },
+      { "trait_type": "Perks", "value": "None" },
+      { "trait_type": "Event", "value": "OU Music Fest 2025" }
+    ]
+  }
+  

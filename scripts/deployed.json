@@ -1,0 +1,20 @@
+{
+  "SoulboundTicket": {
+    "sepolia": "0x58c8DCc961677870Fb0aB646268da2aFECbDBC58"
+  },
+  "RoyaltyTicket": {
+    "sepolia": "0xda8B836b0764C0cF395D8b6062e215Daf190FD76"
+  },
+  "DynamicTicket": {
+    "sepolia": "0xE1b2fC2533CB6DA6BaB54b15f9121BCf1BAc7721"
+  },
+  "ERC721Ticket": {
+    "sepolia": "0x8E8ab7f0E83466c5FD28FC70DdF7cf053191a082"
+  },
+  "StandardTicket": {
+    "sepolia": "0xEffAe1Cbd4738e61ec9b39B1fbc03b491a153C35"
+  },
+  "soulbound": "0x228dd09588cD7FCef871fB5ff69fa02fd7796Efd",
+  "royalty": "0xAC9394D0993D8eD4B9cFb9483B6E8D6162eb2eEC",
+  "erc721": "0x74bb426e5aDDE99Ba89aB59e564dcE81E7Cd62Cc"
+}
