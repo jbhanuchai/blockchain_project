@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+const fs = require("fs");
 
 async function main() {
   const Ticket = await hre.ethers.getContractFactory("DynamicTicket");
@@ -7,9 +8,20 @@ async function main() {
   await ticket.deployed();
 
   console.log("DynamicTicket deployed to:", ticket.address);
+
+  const path = "scripts/deployed.json";
+  let deployed = {};
+  if (fs.existsSync(path)) {
+    deployed = JSON.parse(fs.readFileSync(path));
+  }
+
+  deployed["dynamic"] = ticket.address;
+
+  fs.writeFileSync(path, JSON.stringify(deployed, null, 2));
+  console.log("Saved DynamicTicket to scripts/deployed.json");
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error("Deployment failed:", error);
   process.exitCode = 1;
 });

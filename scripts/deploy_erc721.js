@@ -6,19 +6,21 @@ async function main() {
   const ticket = await Ticket.deploy();
 
   await ticket.deployed();
+  console.log("ERC721Ticket deployed to:", ticket.address);
 
-  const address = ticket.address;
-  console.log("ERC721Ticket deployed to:", address);
-  const deployedPath = "scripts/deployed.json";
-  const deployed = fs.existsSync(deployedPath)
-    ? JSON.parse(fs.readFileSync(deployedPath))
-    : {};
-  deployed["erc721"] = address;
-  fs.writeFileSync(deployedPath, JSON.stringify(deployed, null, 2));
-  console.log("Saved to scripts/deployed.json");
+  const path = "scripts/deployed.json";
+  let deployed = {};
+  if (fs.existsSync(path)) {
+    deployed = JSON.parse(fs.readFileSync(path));
+  }
+
+  deployed["erc721"] = ticket.address;
+
+  fs.writeFileSync(path, JSON.stringify(deployed, null, 2));
+  console.log("Saved ERC721Ticket to scripts/deployed.json");
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error("Deployment failed:", error);
   process.exitCode = 1;
 });
