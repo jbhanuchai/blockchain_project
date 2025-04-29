@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract SoulboundTicket is ERC721URIStorage, Ownable {
     uint256 public nextTokenId;
 
-    constructor() ERC721("SoulboundTicket", "SBTKT") Ownable(msg.sender) {}
+    constructor(address initialOwner) ERC721("SoulboundTicket", "SBTKT") Ownable(initialOwner) {}
 
     function mintTicket(address to, string memory tokenURI) public onlyOwner {
         _safeMint(to, nextTokenId);

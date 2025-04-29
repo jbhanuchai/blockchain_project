@@ -5,20 +5,36 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract DynamicTicket is ERC721URIStorage, Ownable {
-    uint256 public nextTokenId;
+    uint256 private _tokenIds;
+    mapping(uint256 => bool) private _used;
 
-    constructor() ERC721("DynamicTicket", "DYNTKT") Ownable(msg.sender) {}
+    constructor(address initialOwner) ERC721("DynamicTicket", "DYTK") Ownable(initialOwner) {}
 
-    function mintTicket(address to, string memory uri) public onlyOwner {
-        _safeMint(to, nextTokenId);
-        _setTokenURI(nextTokenId, uri);
-        nextTokenId++;
+    function mintTicket(address recipient, string memory tokenURI) public returns (uint256) {
+        uint256 newId = _tokenIds;
+        _safeMint(recipient, newId);
+        _setTokenURI(newId, tokenURI);
+        _tokenIds += 1;
+        return newId;
     }
 
-    function markAsUsed(uint256 tokenId, string memory newURI) public onlyOwner {
-        require(ownerOf(tokenId) != address(0), "Token does not exist");
-        _setTokenURI(tokenId, newURI);
+    function markAsUsed(uint256 tokenId) public {
+        require(_existsSafe(tokenId), "Token does not exist");
+        require(!_used[tokenId], "Ticket already used");
+        _used[tokenId] = true;
     }
 
-    // supportsInterface is automatically handled by ERC721URIStorage in OZ v5
+    function isUsed(uint256 tokenId) public view returns (bool) {
+        require(_existsSafe(tokenId), "Token does not exist");
+        return _used[tokenId];
+    }
+
+    function _existsSafe(uint256 tokenId) internal view returns (bool) {
+        // Try-catch pattern to safely check if token exists
+        try this.ownerOf(tokenId) returns (address) {
+            return true;
+        } catch {
+            return false;
+        }
+    }
 }

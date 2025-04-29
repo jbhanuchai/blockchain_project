@@ -2,8 +2,10 @@ const hre = require("hardhat");
 const fs = require("fs");
 
 async function main() {
+  const [deployer] = await hre.ethers.getSigners();
+
   const Ticket = await hre.ethers.getContractFactory("DynamicTicket");
-  const ticket = await Ticket.deploy();
+  const ticket = await Ticket.deploy(deployer.address); // 👈 Pass deployer's address here
 
   await ticket.deployed();
 
