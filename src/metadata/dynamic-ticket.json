@@ -1,0 +1,23 @@
+{
+  "name": "Dynamic Ticket - Summer Beats 2025",
+  "description": "Ticket that updates status upon use.",
+  "image": "ipfs://bafybeieptbvvnwgvvc2oka46lbndmoxb73gzb5pmg57nt2hinbug57edzi",
+  "attributes": [
+    {
+      "trait_type": "Event",
+      "value": "Summer Beats 2025"
+    },
+    {
+      "trait_type": "Date",
+      "value": "June 10, 2025"
+    },
+    {
+      "trait_type": "Location",
+      "value": "Los Angeles, CA"
+    },
+    {
+      "trait_type": "Ticket Type",
+      "value": "Dynamic"
+    }
+  ]
+}

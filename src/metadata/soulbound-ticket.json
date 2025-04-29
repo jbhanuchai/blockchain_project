@@ -1,0 +1,23 @@
+{
+  "name": "Soulbound Ticket - Summer Beats 2025",
+  "description": "Non-transferable ticket bound to the owner's wallet.",
+  "image": "ipfs://bafkreidqq4plajcupgthzoulsjlpjl77a56ixhxf4xl3owr3inxxos4pza",
+  "attributes": [
+    {
+      "trait_type": "Event",
+      "value": "Summer Beats 2025"
+    },
+    {
+      "trait_type": "Date",
+      "value": "June 10, 2025"
+    },
+    {
+      "trait_type": "Location",
+      "value": "Los Angeles, CA"
+    },
+    {
+      "trait_type": "Ticket Type",
+      "value": "Soulbound"
+    }
+  ]
+}
