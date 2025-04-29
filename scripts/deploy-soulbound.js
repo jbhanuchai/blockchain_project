@@ -6,7 +6,7 @@ async function main() {
   console.log("Deploying SoulboundTicket from:", deployer.address);
 
   const Ticket = await hre.ethers.getContractFactory("SoulboundTicket");
-  const ticket = await Ticket.deploy(deployer.address); // ✅ pass deployer address
+  const ticket = await Ticket.deploy(deployer.address); 
 
   await ticket.deployed();
   console.log("SoulboundTicket deployed to:", ticket.address);
@@ -20,10 +20,10 @@ async function main() {
   deployed["soulbound"] = ticket.address;
 
   fs.writeFileSync(path, JSON.stringify(deployed, null, 2));
-  console.log("✅ Saved SoulboundTicket to scripts/deployed.json");
+  console.log("Saved SoulboundTicket to scripts/deployed.json");
 }
 
 main().catch((error) => {
-  console.error("❌ Deployment failed:", error);
+  console.error("Deployment failed:", error);
   process.exitCode = 1;
 });

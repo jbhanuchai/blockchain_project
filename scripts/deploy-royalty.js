@@ -6,7 +6,7 @@ async function main() {
   console.log("Deploying RoyaltyTicket with deployer:", deployer.address);
 
   const Ticket = await hre.ethers.getContractFactory("RoyaltyTicket");
-  const ticket = await Ticket.deploy(deployer.address); // ✅ pass initialOwner
+  const ticket = await Ticket.deploy(deployer.address); 
 
   await ticket.deployed();
   console.log("RoyaltyTicket deployed to:", ticket.address);
@@ -20,10 +20,10 @@ async function main() {
   deployed["royalty"] = ticket.address;
 
   fs.writeFileSync(path, JSON.stringify(deployed, null, 2));
-  console.log("✅ Saved RoyaltyTicket to scripts/deployed.json");
+  console.log("Saved RoyaltyTicket to scripts/deployed.json");
 }
 
 main().catch((error) => {
-  console.error("❌ Deployment failed:", error);
+  console.error("Deployment failed:", error);
   process.exitCode = 1;
 });
