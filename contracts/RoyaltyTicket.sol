@@ -15,7 +15,7 @@ contract RoyaltyTicket is ERC721URIStorage, ERC2981, Ownable {
         string memory tokenURI,
         address royaltyReceiver,
         uint96 royaltyFeeInBips
-    ) public onlyOwner {
+    ) public {
         _safeMint(to, nextTokenId);
         _setTokenURI(nextTokenId, tokenURI);
         _setTokenRoyalty(nextTokenId, royaltyReceiver, royaltyFeeInBips); // e.g., 500 = 5%

@@ -9,7 +9,7 @@ contract SoulboundTicket is ERC721URIStorage, Ownable {
 
     constructor(address initialOwner) ERC721("SoulboundTicket", "SBTKT") Ownable(initialOwner) {}
 
-    function mintTicket(address to, string memory tokenURI) public onlyOwner {
+    function mintTicket(address to, string memory tokenURI) public {
         _safeMint(to, nextTokenId);
         _setTokenURI(nextTokenId, tokenURI);
         nextTokenId++;
