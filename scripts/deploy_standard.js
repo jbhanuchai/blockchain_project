@@ -17,13 +17,13 @@ async function main() {
     deployed = JSON.parse(fs.readFileSync(path));
   }
 
-  deployed["standard"] = ticket.address; // ✅ Correct key
+  deployed["standard"] = ticket.address; 
 
   fs.writeFileSync(path, JSON.stringify(deployed, null, 2));
-  console.log("✅ Saved StandardTicket to scripts/deployed.json");
+  console.log("Saved StandardTicket to scripts/deployed.json");
 }
 
 main().catch((error) => {
-  console.error("❌ Deployment failed:", error);
+  console.error("Deployment failed:", error);
   process.exitCode = 1;
 });
