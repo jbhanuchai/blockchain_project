@@ -1,0 +1,23 @@
+{
+  "name": "VIP Ticket - Summer Beats 2025",
+  "description": "Access to the VIP section at Summer Beats 2025.",
+  "image": "ipfs://bafkreifsylgmjxxtclrs5qxwewpxz7ncxl4i76ysscamk36vwzwiuhyzha",
+  "attributes": [
+    {
+      "trait_type": "Event",
+      "value": "Summer Beats 2025"
+    },
+    {
+      "trait_type": "Date",
+      "value": "June 10, 2025"
+    },
+    {
+      "trait_type": "Location",
+      "value": "Los Angeles, CA"
+    },
+    {
+      "trait_type": "Ticket Type",
+      "value": "VIP"
+    }
+  ]
+}

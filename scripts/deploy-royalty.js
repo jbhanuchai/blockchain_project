@@ -2,24 +2,25 @@ const hre = require("hardhat");
 const fs = require("fs");
 
 async function main() {
-  const RoyaltyTicket = await hre.ethers.getContractFactory("RoyaltyTicket");
-  const contract = await RoyaltyTicket.deploy();
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("Deploying RoyaltyTicket with deployer:", deployer.address);
 
-  await contract.deployed();
+  const Ticket = await hre.ethers.getContractFactory("RoyaltyTicket");
+  const ticket = await Ticket.deploy(deployer.address); 
 
-  console.log("RoyaltyTicket deployed to:", contract.address);
+  await ticket.deployed();
+  console.log("RoyaltyTicket deployed to:", ticket.address);
 
   const path = "scripts/deployed.json";
   let deployed = {};
-
   if (fs.existsSync(path)) {
     deployed = JSON.parse(fs.readFileSync(path));
   }
 
-  deployed["royalty"] = contract.address;
+  deployed["royalty"] = ticket.address;
 
   fs.writeFileSync(path, JSON.stringify(deployed, null, 2));
-  console.log("Saved royalty address to deployed.json");
+  console.log("Saved RoyaltyTicket to scripts/deployed.json");
 }
 
 main().catch((error) => {
