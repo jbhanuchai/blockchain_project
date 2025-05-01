@@ -1,35 +1,44 @@
-// webpack.config.js
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const path = require("path");
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: "./src/index.js",
+  mode: 'development', // Set mode to development
+  entry: './src/index.js',
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js",
-    clean: true,
-  },
-  devServer: {
-    static: "./dist",
-    port: 3000,
-    historyApiFallback: true,
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
+    publicPath: '/',
   },
   module: {
     rules: [
       {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
-        use: "babel-loader",
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env', '@babel/preset-react'],
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
   resolve: {
-    extensions: [".js", ".jsx"],
+    extensions: ['.js', '.jsx'],
+  },
+  devServer: {
+    static: path.join(__dirname, 'public'),
+    historyApiFallback: true, // Support for React Router
+    port: 8080,
+    open: true,
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: "./public/index.html",
+      template: './public/index.html', // Use your public/index.html as the template
     }),
   ],
-  mode: "development",
 };

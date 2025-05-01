@@ -6,7 +6,12 @@ async function main() {
   console.log("Deploying RoyaltyTicket with deployer:", deployer.address);
 
   const Ticket = await hre.ethers.getContractFactory("RoyaltyTicket");
-  const ticket = await Ticket.deploy(deployer.address); 
+
+  // Fix: Provide all constructor params (owner, royalty receiver, and royalty BPS)
+  const royaltyReceiver = deployer.address;
+  const royaltyBps = 1000; // 10%
+
+  const ticket = await Ticket.deploy(deployer.address, royaltyReceiver, royaltyBps);
 
   await ticket.deployed();
   console.log("RoyaltyTicket deployed to:", ticket.address);
