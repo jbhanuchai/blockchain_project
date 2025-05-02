@@ -1,93 +1,167 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
-import { QRCodeCanvas } from 'qrcode.react'; // Updated import
 
 const VerifyTicket = ({ contracts }) => {
+  const [ticketType, setTicketType] = useState('Standard');
   const [tokenId, setTokenId] = useState('');
-  const [signature, setSignature] = useState('');
-  const [contractType, setContractType] = useState('StandardTicket');
-  const [verificationResult, setVerificationResult] = useState(null);
-  const [qrTokenId, setQrTokenId] = useState('');
+  const [ticketDetails, setTicketDetails] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [marking, setMarking] = useState(false);
+  const [allTickets, setAllTickets] = useState([]);
 
-  const generateQR = async (tokenId) => {
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const all = [];
+        const contract = contracts[ticketType + 'Ticket'];
+        const total = await contract.totalSupply();
+
+        for (let i = 0; i < total; i++) {
+          try {
+            const owner = await contract.ownerOf(i);
+            const tokenURI = await contract.tokenURI(i);
+            if (!tokenURI || tokenURI.includes("undefined")) continue;
+
+            let ipfsURL = tokenURI.startsWith('ipfs://')
+              ? tokenURI.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')
+              : tokenURI;
+
+            const metadataRes = await fetch(ipfsURL);
+            const metadata = await metadataRes.json();
+
+            all.push({
+              tokenId: i,
+              type: ticketType + 'Ticket',
+              eventName: metadata.eventName,
+              owner,
+            });
+          } catch (err) {
+            console.warn(`Skipping token ${i} of ${ticketType}`, err.message);
+          }
+        }
+
+        setAllTickets(all);
+      } catch (err) {
+        console.error('Ticket fetch error:', err);
+      }
+    };
+
+    fetchTickets();
+  }, [ticketType]);
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setTicketDetails(null);
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const message = `Verify ticket ${tokenId}`;
-      const signature = await signer.signMessage(message);
-      return JSON.stringify({ tokenId, signature, contractType });
+      const contract = contracts[ticketType + 'Ticket'];
+      const owner = await contract.ownerOf(tokenId);
+      const tokenURI = await contract.tokenURI(tokenId);
+
+      let ipfsURL = tokenURI.startsWith('ipfs://')
+        ? tokenURI.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')
+        : tokenURI;
+
+      const metadataRes = await fetch(ipfsURL);
+      const metadata = await metadataRes.json();
+
+      let isUsed = false;
+      if (ticketType === 'Dynamic') {
+        isUsed = await contract.isUsed(tokenId);
+      }
+
+      setTicketDetails({
+        owner,
+        eventName: metadata.eventName || 'N/A',
+        date: metadata.date || 'N/A',
+        isUsed
+      });
     } catch (err) {
-      toast.error('Failed to generate QR code');
-      return '';
+      console.error('Verify error:', err);
+      toast.error('Invalid token ID or failed to verify ticket');
+    } finally {
+      setVerifying(false);
     }
   };
 
-  const verifyTicket = async () => {
+  const handleMarkAsUsed = async () => {
+    setMarking(true);
     try {
-      const contract = contracts[contractType];
-      const signerAddress = ethers.utils.verifyMessage(`Verify ticket ${tokenId}`, signature);
-      const owner = await contract.ownerOf(tokenId);
-      const isValid = signerAddress.toLowerCase() === owner.toLowerCase();
-      const isUsed = contractType === 'DynamicTicket' ? await contract.isUsed(tokenId) : false;
-      setVerificationResult({ isValid, isUsed });
-      toast.success('Verification complete');
+      const contract = contracts['DynamicTicket'];
+      const newMetadata = {
+        ...ticketDetails,
+        used: true
+      };
+      const response = await fetch('http://localhost:5001/upload-to-pinata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMetadata),
+      });
+
+      const { ipfsHash } = await response.json();
+      const newTokenURI = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+
+      const tx = await contract.markAsUsed(tokenId, newTokenURI);
+      await tx.wait();
+      toast.success('Ticket marked as used');
+      setTicketDetails(prev => ({ ...prev, isUsed: true }));
     } catch (err) {
-      toast.error('Verification failed');
-      setVerificationResult(null);
+      console.error('Mark as used error:', err);
+      toast.error('Failed to mark ticket as used');
+    } finally {
+      setMarking(false);
     }
   };
 
   return (
-    <div className="section">
+    <div style={{ padding: '40px', maxWidth: '700px', margin: 'auto' }}>
       <h2>Verify Ticket</h2>
-      <select
-        className="select"
-        value={contractType}
-        onChange={(e) => setContractType(e.target.value)}
-      >
-        <option value="StandardTicket">Standard</option>
-        <option value="SoulboundTicket">Soulbound</option>
-        <option value="RoyaltyTicket">Royalty</option>
-        <option value="DynamicTicket">Dynamic</option>
-      </select>
-      <input
-        className="input"
-        type="text"
-        placeholder="Token ID"
-        value={tokenId}
-        onChange={(e) => setTokenId(e.target.value)}
-      />
-      <input
-        className="input"
-        type="text"
-        placeholder="Signature"
-        value={signature}
-        onChange={(e) => setSignature(e.target.value)}
-      />
-      <button
-        className="button button-secondary"
-        onClick={verifyTicket}
-      >
-        Verify
-      </button>
-      {verificationResult && (
-        <p>
-          <strong>Valid:</strong> {verificationResult.isValid ? 'Yes' : 'No'}
-          {contractType === 'DynamicTicket' && (
-            <>, <strong>Used:</strong> {verificationResult.isUsed ? 'Yes' : 'No'}</>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <label>
+          Ticket Type:
+          <select value={ticketType} onChange={e => setTicketType(e.target.value)}>
+            <option value="Standard">Standard</option>
+            <option value="Dynamic">Dynamic</option>
+            <option value="Royalty">Royalty</option>
+            <option value="Soulbound">Soulbound</option>
+          </select>
+        </label>
+
+        <label>
+          Select Ticket:
+          <select onChange={(e) => setTokenId(e.target.value)}>
+            <option value=''>-- Select --</option>
+            {allTickets.map(ticket => (
+              <option key={ticket.tokenId} value={ticket.tokenId}>
+                {`Event: ${ticket.eventName} | ID: ${ticket.tokenId} | Owner: ${ticket.owner.slice(0,6)}...${ticket.owner.slice(-4)}`}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button onClick={handleVerify} disabled={verifying || !tokenId}>
+          {verifying ? 'Verifying...' : 'Verify'}
+        </button>
+      </div>
+
+      {ticketDetails && (
+        <div style={{ marginTop: '32px', padding: '20px', border: '1px solid #ccc', borderRadius: '10px', background: '#f9f9f9' }}>
+          <p><strong>Owner:</strong> {ticketDetails.owner}</p>
+          <p><strong>Event:</strong> {ticketDetails.eventName}</p>
+          <p><strong>Date:</strong> {ticketDetails.date}</p>
+          {ticketType === 'Dynamic' && (
+            <>
+              <p><strong>Used:</strong> {ticketDetails.isUsed ? 'Yes' : 'No'}</p>
+              {!ticketDetails.isUsed && (
+                <button onClick={handleMarkAsUsed} disabled={marking}>
+                  {marking ? 'Marking...' : 'Mark as Used'}
+                </button>
+              )}
+            </>
           )}
-        </p>
+        </div>
       )}
-      <h3>Generate QR Code</h3>
-      <input
-        className="input"
-        type="text"
-        placeholder="Token ID for QR"
-        value={qrTokenId}
-        onChange={(e) => setQrTokenId(e.target.value)}
-      />
-      {qrTokenId && <QRCodeCanvas value={generateQR(qrTokenId)} />}
     </div>
   );
 };

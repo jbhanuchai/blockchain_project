@@ -34,4 +34,8 @@ contract DynamicTicket is ERC721URIStorage, Ownable {
     function isUsed(uint256 tokenId) external view returns (bool) {
         return used[tokenId];
     }
+    function totalSupply() public view returns (uint256) {
+        return _tokenIds;
+    }
+
 }

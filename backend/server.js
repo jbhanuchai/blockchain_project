@@ -4,12 +4,11 @@ const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
-const port = 5001; // Changed to 5001 to avoid conflict
+const port = 5001;
 
-app.use(cors({ origin: 'http://localhost:8080' }));
+app.use(cors());
 app.use(express.json());
 
-// Log all incoming requests for debugging
 app.use((req, res, next) => {
   console.log(`📩 Received request: ${req.method} ${req.url}`);
   next();
@@ -17,19 +16,18 @@ app.use((req, res, next) => {
 
 console.log("✅ Using JWT:", process.env.PINATA_JWT);
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is running' });
 });
 
-// Test route to check Pinata connection
+// Test Pinata connection
 app.get('/test-pinata', async (req, res) => {
   try {
     const testMetadata = {
       pinataMetadata: { name: "Test File" },
       pinataContent: { test: "Pinata Test Upload", timestamp: new Date().toISOString() },
     };
-    console.log('➡️ Uploading test metadata:', testMetadata);
 
     const pinataRes = await axios.post('https://api.pinata.cloud/pinning/pinJSONToIPFS', testMetadata, {
       headers: {
@@ -39,7 +37,6 @@ app.get('/test-pinata', async (req, res) => {
     });
 
     const { IpfsHash } = pinataRes.data;
-    console.log('✅ Pinata upload successful:', pinataRes.data);
 
     return res.status(200).json({
       success: true,
@@ -61,19 +58,48 @@ app.get('/test-pinata', async (req, res) => {
   }
 });
 
-// Route for uploading event metadata
+// GET IPFS metadata through backend proxy to avoid CORS
+app.get('/fetch-ipfs/:cid', async (req, res) => {
+  try {
+    const cid = req.params.cid;
+
+    // Ensure CID is clean (some errors show full URL as "CID")
+    const cleanedCid = cid.includes("ipfs/") ? cid.split("ipfs/")[1] : cid;
+
+    const url = `https://gateway.pinata.cloud/ipfs/${cleanedCid}`;
+    const ipfsRes = await axios.get(url);
+    return res.json(ipfsRes.data);
+  } catch (err) {
+    console.error(`❌ Backend proxy failed for CID ${req.params.cid}:`, err.message);
+    return res.status(500).json({ error: 'Failed to fetch from IPFS', details: err.message });
+  }
+});
+
+// Upload event metadata to Pinata (price optional)
 app.post('/upload-to-pinata', async (req, res) => {
   try {
     const { eventName, date, price } = req.body;
-    if (!eventName || !date || !price) {
+
+    if (!eventName || !date) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+
+    const content = {
+      eventName,
+      date,
+      timestamp: new Date().toISOString()
+    };
+
+    if (price !== undefined && price !== null && price !== "") {
+      content.price = price;
     }
 
     const metadata = {
       pinataMetadata: { name: `Event-${eventName}-${date}` },
-      pinataContent: { eventName, date, price, timestamp: new Date().toISOString() },
+      pinataContent: content,
     };
-    console.log('➡️ Uploading event metadata:', metadata);
+
+    console.log("➡️ Uploading metadata:", metadata);
 
     const pinataRes = await axios.post('https://api.pinata.cloud/pinning/pinJSONToIPFS', metadata, {
       headers: {
@@ -83,7 +109,6 @@ app.post('/upload-to-pinata', async (req, res) => {
     });
 
     const { IpfsHash } = pinataRes.data;
-    console.log('✅ Pinata upload successful:', pinataRes.data);
 
     return res.status(200).json({
       success: true,

@@ -89,4 +89,7 @@ contract RoyaltyTicket is ERC721URIStorage, ERC2981, Ownable {
     {
         return super.supportsInterface(interfaceId);
     }
+    function totalSupply() public view returns (uint256) {
+    return _tokenIds;
+}
 }

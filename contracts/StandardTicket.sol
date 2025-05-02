@@ -70,4 +70,8 @@ contract StandardTicket is ERC721URIStorage, Ownable {
     function getListingPrice(uint256 tokenId) external view returns (uint256) {
         return ticketListings[tokenId];
     }
+    function totalSupply() public view returns (uint256) {
+    return _tokenIds;
+}
+
 }

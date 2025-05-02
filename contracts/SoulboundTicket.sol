@@ -50,5 +50,7 @@ function getApproved(uint256) public pure override(ERC721, IERC721) returns (add
 function isApprovedForAll(address, address) public pure override(ERC721, IERC721) returns (bool) {
     return false;
 }
-
+function totalSupply() public view returns (uint256) {
+    return _nextTokenId;
+}
 }
