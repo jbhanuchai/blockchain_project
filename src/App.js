@@ -11,7 +11,6 @@ import AdminDashboard from './components/AdminDashboard';
 import VerifyTicket from './components/VerifyTicket';
 import Marketplace from './components/Marketplace';
 import MyBadge from './components/MyBadge';
-import ResellTicket from './components/ResellTicket';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import './index.css';
 import { ethers } from 'ethers';
@@ -108,9 +107,6 @@ function App() {
           </Route>
           <Route path="/buy-ticket">
             <Marketplace contracts={contracts} />
-          </Route>
-          <Route path="/resell-ticket">
-            <ResellTicket contracts={contracts} userAddress={userAddress} />
           </Route>
           <Route path="/my-badge">
             <MyBadge contracts={contracts} userAddress={userAddress} />

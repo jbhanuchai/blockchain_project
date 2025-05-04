@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
+import { ethers } from 'ethers';
+import QRScanner from './QRScanner';
 
 const VerifyTicket = ({ contracts }) => {
   const [ticketType, setTicketType] = useState('Standard');
@@ -23,47 +24,50 @@ const VerifyTicket = ({ contracts }) => {
             const tokenURI = await contract.tokenURI(i);
             if (!tokenURI || tokenURI.includes("undefined")) continue;
 
-            let ipfsURL = tokenURI.startsWith('ipfs://')
-              ? tokenURI.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')
+            const ipfsURL = tokenURI.startsWith('ipfs://')
+              ? `https://gateway.pinata.cloud/ipfs/${tokenURI.split('ipfs://')[1]}`
               : tokenURI;
 
-            const metadataRes = await fetch(ipfsURL);
-            const metadata = await metadataRes.json();
+            const res = await fetch(ipfsURL);
+            const metadata = await res.json();
 
             all.push({
               tokenId: i,
               type: ticketType + 'Ticket',
-              eventName: metadata.eventName,
+              eventName: metadata.eventName || 'N/A',
               owner,
             });
-          } catch (err) {
-            console.warn(`Skipping token ${i} of ${ticketType}`, err.message);
+          } catch {
+            continue; // Skip tokens that throw
           }
         }
 
         setAllTickets(all);
       } catch (err) {
         console.error('Ticket fetch error:', err);
+        toast.error('Failed to load ticket options');
       }
     };
 
     fetchTickets();
-  }, [ticketType]);
+  }, [ticketType, contracts]);
 
   const handleVerify = async () => {
+    if (!tokenId) return;
     setVerifying(true);
     setTicketDetails(null);
+
     try {
       const contract = contracts[ticketType + 'Ticket'];
       const owner = await contract.ownerOf(tokenId);
-      const tokenURI = await contract.tokenURI(tokenId);
+      const uri = await contract.tokenURI(tokenId);
 
-      let ipfsURL = tokenURI.startsWith('ipfs://')
-        ? tokenURI.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')
-        : tokenURI;
+      const ipfsURL = uri.startsWith('ipfs://')
+        ? `https://gateway.pinata.cloud/ipfs/${uri.split('ipfs://')[1]}`
+        : uri;
 
-      const metadataRes = await fetch(ipfsURL);
-      const metadata = await metadataRes.json();
+      const res = await fetch(ipfsURL);
+      const metadata = await res.json();
 
       let isUsed = false;
       if (ticketType === 'Dynamic') {
@@ -78,7 +82,56 @@ const VerifyTicket = ({ contracts }) => {
       });
     } catch (err) {
       console.error('Verify error:', err);
-      toast.error('Invalid token ID or failed to verify ticket');
+      toast.error('Invalid token ID or unable to verify ticket');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleQRVerify = async (contractAddress, tokenId, expectedOwner) => {
+    setVerifying(true);
+    setTicketDetails(null);
+
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const matchedType = Object.entries(contracts).find(([key, instance]) => 
+        instance.address.toLowerCase() === contractAddress.toLowerCase()
+      );
+      
+      if (!matchedType) {
+        toast.error("Unrecognized contract address");
+        return;
+      }
+      
+      const [typeKey, contractInstance] = matchedType;
+      const abi = contractInstance.interface.fragments;
+      const scannedContract = new ethers.Contract(contractAddress, abi, signer);
+      const onChainOwner = await scannedContract.ownerOf(tokenId);
+
+      if (expectedOwner && onChainOwner.toLowerCase() !== expectedOwner.toLowerCase()) {
+        toast.error("Owner mismatch!");
+        return;
+      }
+
+      const uri = await scannedContract.tokenURI(tokenId);
+      const ipfsURL = uri.startsWith("ipfs://")
+        ? `https://gateway.pinata.cloud/ipfs/${uri.split("ipfs://")[1]}`
+        : uri;
+
+      const res = await fetch(ipfsURL);
+      const metadata = await res.json();
+
+      setTicketDetails({
+        owner: onChainOwner,
+        eventName: metadata.eventName || "N/A",
+        date: metadata.date || "N/A",
+      });
+
+      toast.success("QR Verified ✅");
+    } catch (err) {
+      console.error("QR verification error:", err);
+      toast.error("QR verification failed");
     } finally {
       setVerifying(false);
     }
@@ -88,21 +141,24 @@ const VerifyTicket = ({ contracts }) => {
     setMarking(true);
     try {
       const contract = contracts['DynamicTicket'];
+
       const newMetadata = {
         ...ticketDetails,
-        used: true
+        isUsed: true
       };
+
       const response = await fetch('http://localhost:5001/upload-to-pinata', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMetadata),
+        body: JSON.stringify(newMetadata)
       });
 
       const { ipfsHash } = await response.json();
-      const newTokenURI = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+      const newURI = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
 
-      const tx = await contract.markAsUsed(tokenId, newTokenURI);
+      const tx = await contract.markAsUsed(tokenId, newURI);
       await tx.wait();
+
       toast.success('Ticket marked as used');
       setTicketDetails(prev => ({ ...prev, isUsed: true }));
     } catch (err) {
@@ -130,19 +186,35 @@ const VerifyTicket = ({ contracts }) => {
 
         <label>
           Select Ticket:
-          <select onChange={(e) => setTokenId(e.target.value)}>
+          <select
+            value={tokenId}
+            onChange={e => setTokenId(e.target.value)}
+            disabled={allTickets.length === 0}
+          >
             <option value=''>-- Select --</option>
             {allTickets.map(ticket => (
               <option key={ticket.tokenId} value={ticket.tokenId}>
-                {`Event: ${ticket.eventName} | ID: ${ticket.tokenId} | Owner: ${ticket.owner.slice(0,6)}...${ticket.owner.slice(-4)}`}
+                {`Event: ${ticket.eventName} | ID: ${ticket.tokenId} | Owner: ${ticket.owner.slice(0, 6)}...${ticket.owner.slice(-4)}`}
               </option>
             ))}
           </select>
         </label>
 
-        <button onClick={handleVerify} disabled={verifying || !tokenId}>
-          {verifying ? 'Verifying...' : 'Verify'}
+        <button onClick={handleVerify}>Verify
         </button>
+
+        <div style={{ marginTop: '40px' }}>
+          <h3>Or Scan QR Code</h3>
+          <QRScanner onScanSuccess={(data) => {
+            if (!data.contract || !data.tokenId) {
+              toast.error("Invalid QR code format");
+              return;
+            }
+            handleQRVerify(data.contract, data.tokenId, data.owner);
+          }} />
+
+        </div>
+
       </div>
 
       {ticketDetails && (
@@ -152,7 +224,7 @@ const VerifyTicket = ({ contracts }) => {
           <p><strong>Date:</strong> {ticketDetails.date}</p>
           {ticketType === 'Dynamic' && (
             <>
-              <p><strong>Used:</strong> {ticketDetails.isUsed ? 'Yes' : 'No'}</p>
+              <p><strong>Used:</strong> {ticketDetails.isUsed ? '✅ Yes' : '❌ No'}</p>
               {!ticketDetails.isUsed && (
                 <button onClick={handleMarkAsUsed} disabled={marking}>
                   {marking ? 'Marking...' : 'Mark as Used'}

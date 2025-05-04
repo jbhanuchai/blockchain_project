@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
+import { getMetadata } from '../utils/getMetadata';
 
 const MyTickets = ({ contracts, userAddress }) => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [resalePrice, setResalePrice] = useState('');
+  const [submitting, setSubmitting] = useState(false); // 🔹 Added state
 
   useEffect(() => {
     if (userAddress) {
@@ -15,7 +20,6 @@ const MyTickets = ({ contracts, userAddress }) => {
   const fetchTickets = async () => {
     setLoading(true);
     const ownedTickets = [];
-    console.log("Connected wallet:", userAddress);
 
     for (const [type, contract] of Object.entries(contracts)) {
       try {
@@ -27,20 +31,25 @@ const MyTickets = ({ contracts, userAddress }) => {
 
             let tokenURI = await contract.tokenURI(i);
             if (!tokenURI || tokenURI.includes("undefined")) continue;
-            if (tokenURI.startsWith("ipfs://")) {
-              tokenURI = tokenURI.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
-            }
 
-            const metadataRes = await fetch(tokenURI);
-            const metadata = await metadataRes.json();
+            const metadata = await getMetadata(tokenURI, `${type}-${i}`);
 
             let price = '0';
+            let isListed = false;
+            let listingPrice = '';
+
             if (type === 'StandardTicket' || type === 'RoyaltyTicket') {
               try {
                 const rawPrice = await contract.originalPrices(i);
                 price = ethers.utils.formatEther(rawPrice);
+
+                const listedPrice = await contract.ticketListings(i);
+                if (listedPrice.gt(0)) {
+                  isListed = true;
+                  listingPrice = ethers.utils.formatEther(listedPrice);
+                }
               } catch (err) {
-                console.warn(`Failed to fetch price for ${type} token ${i}`);
+                console.warn(`Failed to fetch price or listing for ${type} token ${i}`);
               }
             }
 
@@ -49,7 +58,9 @@ const MyTickets = ({ contracts, userAddress }) => {
               type,
               owner,
               metadata,
-              price
+              price,
+              isListed,
+              listingPrice
             });
           } catch (err) {
             console.warn(`Skipping token ${i} of ${type}`, err.message);
@@ -64,23 +75,44 @@ const MyTickets = ({ contracts, userAddress }) => {
     setLoading(false);
   };
 
-  const handleListForSale = async (ticket) => {
-    const resalePrice = prompt("Enter resale price in ETH:");
-    if (!resalePrice || isNaN(resalePrice) || parseFloat(resalePrice) <= 0) {
-      toast.error("Invalid resale price");
+  const openModal = (ticket) => {
+    setSelectedTicket(ticket);
+    setResalePrice(ticket.listingPrice || '');
+    setShowModal(true);
+  };
+
+  const handleResaleSubmit = async () => {
+    if (!resalePrice || isNaN(resalePrice) || parseFloat(resalePrice) <= 0.001) {
+      toast.error("Price must be at least 0.001 ETH");
       return;
     }
 
+    setSubmitting(true);
     try {
-      const contract = contracts[ticket.type];
+      const contract = contracts[selectedTicket.type];
+      const tokenId = selectedTicket.tokenId;
       const priceInWei = ethers.utils.parseEther(resalePrice);
-      const tx = await contract.listForSale(ticket.tokenId, priceInWei);
+
+      if (selectedTicket.type === 'RoyaltyTicket') {
+        const [, royaltyAmount] = await contract.royaltyInfo(tokenId, priceInWei);
+        if (royaltyAmount.gte(priceInWei)) {
+          toast.error("Royalty is greater than or equal to resale price");
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const tx = await contract.listForSale(tokenId, priceInWei);
+      toast.info("Transaction submitted...");
       await tx.wait();
       toast.success("Ticket listed for sale");
+      setShowModal(false);
       fetchTickets();
     } catch (err) {
       console.error("Listing failed:", err);
       toast.error("Failed to list ticket");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -104,15 +136,63 @@ const MyTickets = ({ contracts, userAddress }) => {
               {(ticket.type === 'StandardTicket' || ticket.type === 'RoyaltyTicket') && (
                 <>
                   <p><strong>Original Price:</strong> {ticket.price} ETH</p>
-                  <button onClick={() => handleListForSale(ticket)}>List for Sale</button>
+                  {ticket.isListed && (
+                    <p><strong>Listed:</strong> {ticket.listingPrice} ETH</p>
+                  )}
+                  <button onClick={() => openModal(ticket)}>
+                    {ticket.isListed ? "Edit Listing" : "List for Sale"}
+                  </button>
                 </>
               )}
             </div>
           ))}
         </div>
       )}
+
+      {showModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalStyle}>
+            <h3>Set Resale Price (ETH)</h3>
+            <input
+              type="number"
+              step="0.0001"
+              value={resalePrice}
+              onChange={(e) => setResalePrice(e.target.value)}
+              placeholder="Enter price"
+              style={{ marginBottom: '16px', padding: '8px', width: '100%' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setShowModal(false)}>
+                Cancel
+              </button>
+              <button onClick={handleResaleSubmit} disabled={submitting}>
+                {submitting ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+const modalOverlayStyle = {
+  position: 'fixed',
+  top: 0, left: 0,
+  width: '100%', height: '100%',
+  backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000,
+};
+
+const modalStyle = {
+  backgroundColor: 'white',
+  padding: '24px',
+  borderRadius: '8px',
+  width: '300px',
+  boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)',
 };
 
 export default MyTickets;

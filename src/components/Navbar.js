@@ -8,7 +8,6 @@ const NavBar = () => {
         <Link to="/" style={styles.link}>Home</Link>
         <Link to="/buy-ticket" style={styles.link}>Buy Ticket</Link>
         <Link to="/my-tickets" style={styles.link}>My Tickets</Link>
-        <Link to="/resell-ticket" style={styles.link}>Resell</Link>
         <Link to="/event-status" style={styles.link}>Admin</Link>
         <Link to="/verify" style={styles.link}>Verify</Link>
         <Link to="/my-badge" style={styles.link}>My Badge</Link>
