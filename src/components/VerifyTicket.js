@@ -4,13 +4,14 @@ import { ethers } from 'ethers';
 import QRScanner from './QRScanner';
 
 const VerifyTicket = ({ contracts }) => {
-  const [ticketType, setTicketType] = useState('Standard');
-  const [tokenId, setTokenId] = useState('');
-  const [ticketDetails, setTicketDetails] = useState(null);
-  const [verifying, setVerifying] = useState(false);
-  const [marking, setMarking] = useState(false);
-  const [allTickets, setAllTickets] = useState([]);
+  const [ticketType, setTicketType] = useState('Standard'); // Type of ticket being verified
+  const [tokenId, setTokenId] = useState(''); // Selected token ID
+  const [ticketDetails, setTicketDetails] = useState(null); // Stores fetched ticket metadata
+  const [verifying, setVerifying] = useState(false); // Loading state during verification
+  const [marking, setMarking] = useState(false); // Loading state during "mark as used"
+  const [allTickets, setAllTickets] = useState([]); // List of tickets for selected type
 
+  // Load all tickets of the selected type on component mount or type change
   useEffect(() => {
     const fetchTickets = async () => {
       try {
@@ -38,7 +39,7 @@ const VerifyTicket = ({ contracts }) => {
               owner,
             });
           } catch {
-            continue; // Skip tokens that throw
+            continue; // Skip tokens with errors
           }
         }
 
@@ -52,6 +53,7 @@ const VerifyTicket = ({ contracts }) => {
     fetchTickets();
   }, [ticketType, contracts]);
 
+  // Manual verification using dropdown-selected token
   const handleVerify = async () => {
     if (!tokenId) return;
     setVerifying(true);
@@ -88,6 +90,7 @@ const VerifyTicket = ({ contracts }) => {
     }
   };
 
+  // QR-based verification logic
   const handleQRVerify = async (contractAddress, tokenId, expectedOwner) => {
     setVerifying(true);
     setTicketDetails(null);
@@ -95,22 +98,25 @@ const VerifyTicket = ({ contracts }) => {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
-      const matchedType = Object.entries(contracts).find(([key, instance]) => 
+
+      // Find contract type by matching address
+      const matchedType = Object.entries(contracts).find(([key, instance]) =>
         instance.address.toLowerCase() === contractAddress.toLowerCase()
       );
-      
+
       if (!matchedType) {
         toast.error("Unrecognized contract address");
         return;
       }
-      
+
       const [typeKey, contractInstance] = matchedType;
       const abi = contractInstance.interface.fragments;
       const scannedContract = new ethers.Contract(contractAddress, abi, signer);
+
       const onChainOwner = await scannedContract.ownerOf(tokenId);
 
       if (expectedOwner && onChainOwner.toLowerCase() !== expectedOwner.toLowerCase()) {
-        toast.error("Owner mismatch!");
+        toast.error("Owner mismatch");
         return;
       }
 
@@ -128,7 +134,7 @@ const VerifyTicket = ({ contracts }) => {
         date: metadata.date || "N/A",
       });
 
-      toast.success("QR Verified ✅");
+      toast.success("QR Verified");
     } catch (err) {
       console.error("QR verification error:", err);
       toast.error("QR verification failed");
@@ -137,6 +143,7 @@ const VerifyTicket = ({ contracts }) => {
     }
   };
 
+  // Mark a Dynamic ticket as used (updates metadata)
   const handleMarkAsUsed = async () => {
     setMarking(true);
     try {
@@ -147,6 +154,7 @@ const VerifyTicket = ({ contracts }) => {
         isUsed: true
       };
 
+      // Upload new metadata to Pinata
       const response = await fetch('http://localhost:5001/upload-to-pinata', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,6 +164,7 @@ const VerifyTicket = ({ contracts }) => {
       const { ipfsHash } = await response.json();
       const newURI = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
 
+      // Call markAsUsed with updated metadata URI
       const tx = await contract.markAsUsed(tokenId, newURI);
       await tx.wait();
 
@@ -173,6 +182,7 @@ const VerifyTicket = ({ contracts }) => {
     <div style={{ padding: '40px', maxWidth: '700px', margin: 'auto' }}>
       <h2>Verify Ticket</h2>
 
+      {/* Manual Verification UI */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <label>
           Ticket Type:
@@ -200,9 +210,9 @@ const VerifyTicket = ({ contracts }) => {
           </select>
         </label>
 
-        <button onClick={handleVerify}>Verify
-        </button>
+        <button onClick={handleVerify}>Verify</button>
 
+        {/* QR Verification UI */}
         <div style={{ marginTop: '40px' }}>
           <h3>Or Scan QR Code</h3>
           <QRScanner onScanSuccess={(data) => {
@@ -212,11 +222,10 @@ const VerifyTicket = ({ contracts }) => {
             }
             handleQRVerify(data.contract, data.tokenId, data.owner);
           }} />
-
         </div>
-
       </div>
 
+      {/* Display Verified Ticket Details */}
       {ticketDetails && (
         <div style={{ marginTop: '32px', padding: '20px', border: '1px solid #ccc', borderRadius: '10px', background: '#f9f9f9' }}>
           <p><strong>Owner:</strong> {ticketDetails.owner}</p>
@@ -224,7 +233,7 @@ const VerifyTicket = ({ contracts }) => {
           <p><strong>Date:</strong> {ticketDetails.date}</p>
           {ticketType === 'Dynamic' && (
             <>
-              <p><strong>Used:</strong> {ticketDetails.isUsed ? '✅ Yes' : '❌ No'}</p>
+              <p><strong>Used:</strong> {ticketDetails.isUsed ? 'Yes' : 'No'}</p>
               {!ticketDetails.isUsed && (
                 <button onClick={handleMarkAsUsed} disabled={marking}>
                   {marking ? 'Marking...' : 'Mark as Used'}

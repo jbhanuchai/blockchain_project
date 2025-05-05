@@ -3,20 +3,23 @@ import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { getMetadata } from '../utils/getMetadata';
 
+// This component shows all tickets owned by the current user
 const MyTickets = ({ contracts, userAddress }) => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [resalePrice, setResalePrice] = useState('');
-  const [submitting, setSubmitting] = useState(false); // 🔹 Added state
+  const [submitting, setSubmitting] = useState(false); // Controls submit button loading state
 
+  // Fetch tickets when user address changes
   useEffect(() => {
     if (userAddress) {
       fetchTickets();
     }
   }, [userAddress]);
 
+  // Get all tickets owned by the user across contract types
   const fetchTickets = async () => {
     setLoading(true);
     const ownedTickets = [];
@@ -38,6 +41,7 @@ const MyTickets = ({ contracts, userAddress }) => {
             let isListed = false;
             let listingPrice = '';
 
+            // Handle price and listing logic for Standard and Royalty tickets
             if (type === 'StandardTicket' || type === 'RoyaltyTicket') {
               try {
                 const rawPrice = await contract.originalPrices(i);
@@ -75,12 +79,14 @@ const MyTickets = ({ contracts, userAddress }) => {
     setLoading(false);
   };
 
+  // Opens modal to list ticket for resale
   const openModal = (ticket) => {
     setSelectedTicket(ticket);
     setResalePrice(ticket.listingPrice || '');
     setShowModal(true);
   };
 
+  // Submit resale listing to the blockchain
   const handleResaleSubmit = async () => {
     if (!resalePrice || isNaN(resalePrice) || parseFloat(resalePrice) <= 0.001) {
       toast.error("Price must be at least 0.001 ETH");
@@ -93,6 +99,7 @@ const MyTickets = ({ contracts, userAddress }) => {
       const tokenId = selectedTicket.tokenId;
       const priceInWei = ethers.utils.parseEther(resalePrice);
 
+      // Check if royalty fee exceeds listing price
       if (selectedTicket.type === 'RoyaltyTicket') {
         const [, royaltyAmount] = await contract.royaltyInfo(tokenId, priceInWei);
         if (royaltyAmount.gte(priceInWei)) {
@@ -176,6 +183,7 @@ const MyTickets = ({ contracts, userAddress }) => {
   );
 };
 
+// Modal overlay styling
 const modalOverlayStyle = {
   position: 'fixed',
   top: 0, left: 0,
@@ -187,6 +195,7 @@ const modalOverlayStyle = {
   zIndex: 1000,
 };
 
+// Modal box styling
 const modalStyle = {
   backgroundColor: 'white',
   padding: '24px',

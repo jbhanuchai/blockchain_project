@@ -1,10 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
+// This component renders the top navigation bar for the application
 const NavBar = () => {
   return (
     <nav style={styles.nav}>
       <div style={styles.links}>
+        {/* Navigation links to different routes in the app */}
         <Link to="/" style={styles.link}>Home</Link>
         <Link to="/buy-ticket" style={styles.link}>Buy Ticket</Link>
         <Link to="/my-tickets" style={styles.link}>My Tickets</Link>
@@ -16,28 +18,29 @@ const NavBar = () => {
   );
 };
 
+// Inline styles for the navigation bar and links
 const styles = {
   nav: {
-    backgroundColor: "#111",
-    padding: "16px 32px",
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    position: "sticky",
+    backgroundColor: "#111",              
+    padding: "16px 32px",                   
+    display: "flex",                     
+    justifyContent: "flex-end",           
+    alignItems: "center",                 
+    position: "sticky",                   
     top: 0,
-    zIndex: 1000,
-    boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+    zIndex: 1000,                           
+    boxShadow: "0 2px 6px rgba(0,0,0,0.15)", 
   },
   links: {
-    display: "flex",
-    gap: "24px",
-    flexWrap: "wrap",
+    display: "flex",                    
+    gap: "24px",                            
+    flexWrap: "wrap",                     
   },  
   link: {
-    color: "#fff",
-    textDecoration: "none",
-    fontSize: "1rem",
-    fontWeight: "500",
+    color: "#fff",                         
+    textDecoration: "none",                
+    fontSize: "1rem",                       
+    fontWeight: "500",                      
   },
 };
 

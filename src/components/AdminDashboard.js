@@ -3,7 +3,9 @@ import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { getMetadata } from '../utils/getMetadata';
 
+// AdminDashboard component handles ticket minting and admin-level views
 const AdminDashboard = ({ contracts, userAddress }) => {
+  // State variables for form inputs and UI status
   const [ticketType, setTicketType] = useState('Standard');
   const [recipient, setRecipient] = useState('');
   const [eventName, setEventName] = useState('');
@@ -15,8 +17,10 @@ const AdminDashboard = ({ contracts, userAddress }) => {
   const [allTickets, setAllTickets] = useState([]);
   const [fetching, setFetching] = useState(false);
 
+  // Determines if the selected ticket type requires a price
   const requiresPrice = () => ticketType === 'Standard' || ticketType === 'Royalty';
 
+  // Resets form fields after minting
   const resetForm = () => {
     setRecipient('');
     setEventName('');
@@ -25,6 +29,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
     setMaxResale('');
   };
 
+  // Handles the minting of a ticket
   const handleMint = async () => {
     if (
       !recipient || !eventName || !eventDate ||
@@ -37,6 +42,8 @@ const AdminDashboard = ({ contracts, userAddress }) => {
 
     try {
       setMinting(true);
+
+      // Upload event metadata to Pinata/IPFS
       const response = await fetch('http://localhost:5001/upload-to-pinata', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,6 +53,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
       const { ipfsHash } = await response.json();
       const tokenURI = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
 
+      // Minting logic per ticket type
       let tx, tokenId;
       if (ticketType === 'Standard') {
         tx = await contracts.StandardTicket.mintTicket(recipient, tokenURI, ethers.utils.parseEther(price));
@@ -67,6 +75,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
         tokenId = await contracts.SoulboundTicket.totalSupply().then(n => n - 1);
       }
 
+      // Save last minted ticket info for preview
       setLastMinted({
         type: ticketType + 'Ticket',
         tokenId,
@@ -85,6 +94,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
     }
   };
 
+  // Fetches all existing tickets across all contract types
   const fetchAllTickets = async () => {
     setFetching(true);
     const tickets = [];
@@ -133,7 +143,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
     <div style={styles.container}>
       <h2 style={styles.header}>Admin Dashboard</h2>
 
-      {/* Mint Form */}
+      {/* Form for minting a new ticket */}
       <div style={styles.form}>
         <label>
           Ticket Type:
@@ -184,7 +194,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
         </button>
       </div>
 
-      {/* Minted Preview */}
+      {/* Display the last minted ticket */}
       {lastMinted && (
         <div style={{ marginTop: '32px' }}>
           <h3>Recently Minted Ticket</h3>
@@ -199,7 +209,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
         </div>
       )}
 
-      {/* Monitor Section */}
+      {/* List of all tickets minted so far */}
       <div style={{ marginTop: '40px' }}>
         <h3>All Minted Tickets</h3>
         <button onClick={fetchAllTickets} disabled={fetching}>
@@ -227,6 +237,7 @@ const AdminDashboard = ({ contracts, userAddress }) => {
   );
 };
 
+// Inline styles for layout and cards
 const styles = {
   container: {
     padding: '40px',

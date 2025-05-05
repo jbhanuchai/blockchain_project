@@ -1,6 +1,8 @@
 import React from "react";
 
+// Home component - displays welcome screen and wallet connection UI
 const Home = ({ userAddress, connectWallet }) => {
+  // Check if the user is connected by verifying if userAddress exists
   const isConnected = !!userAddress;
 
   return (
@@ -9,11 +11,14 @@ const Home = ({ userAddress, connectWallet }) => {
       <p style={styles.subtitle}>
         Use the navigation links above to explore or connect your wallet to begin.
       </p>
+
+      {/* Conditional rendering based on wallet connection */}
       {!isConnected ? (
         <button style={styles.button} onClick={connectWallet}>
           Connect Wallet
         </button>
       ) : (
+        // If connected, show a truncated wallet address
         <p style={styles.connected}>
           Connected: {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
         </p>
@@ -22,6 +27,7 @@ const Home = ({ userAddress, connectWallet }) => {
   );
 };
 
+// Inline styles for layout and elements
 const styles = {
   wrapper: {
     paddingTop: "100px",
@@ -29,7 +35,7 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     textAlign: "center",
-    minHeight: "calc(100vh - 60px)",
+    minHeight: "calc(100vh - 60px)", // ensures content fills viewport
   },
   title: {
     fontSize: "3rem",
@@ -41,7 +47,7 @@ const styles = {
     fontSize: "1.25rem",
     color: "#555",
     marginBottom: "30px",
-    maxWidth: "600px",
+    maxWidth: "600px", // limits subtitle width for readability
   },
   button: {
     padding: "12px 28px",
@@ -54,7 +60,7 @@ const styles = {
   },
   connected: {
     fontSize: "1rem",
-    color: "#28a745",
+    color: "#28a745", // green for success/connected
     fontWeight: "bold",
   },
 };

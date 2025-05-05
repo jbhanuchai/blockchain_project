@@ -3,16 +3,19 @@ import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { getCachedMetadata } from '../utils/ipfsHelpers';
 
+// Marketplace component - displays listed tickets for purchase
 const Marketplace = ({ contracts }) => {
-  const [listedTickets, setListedTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [buyingTokenId, setBuyingTokenId] = useState(null);
+  const [listedTickets, setListedTickets] = useState([]); // List of tickets available for resale
+  const [loading, setLoading] = useState(false);          // UI state while fetching
+  const [buyingTokenId, setBuyingTokenId] = useState(null); // Tracks which token is being purchased
 
+  // Fetch all tickets that are currently listed for sale
   const fetchListedTickets = async () => {
     setLoading(true);
     const tickets = [];
 
     for (const [type, contract] of Object.entries(contracts)) {
+      // Only fetch from ticket types that support resale
       if (type !== 'StandardTicket' && type !== 'RoyaltyTicket') continue;
 
       try {
@@ -20,6 +23,7 @@ const Marketplace = ({ contracts }) => {
 
         for (let tokenId = 0; tokenId < total; tokenId++) {
           try {
+            // Get the resale price
             const price = await contract.ticketListings(tokenId);
             if (price.gt(0)) {
               let uri;
@@ -31,6 +35,7 @@ const Marketplace = ({ contracts }) => {
                 continue;
               }
 
+              // Extract CID from IPFS URI format
               let cid;
               if (uri.startsWith("ipfs://")) {
                 cid = uri.split("ipfs://")[1];
@@ -41,6 +46,7 @@ const Marketplace = ({ contracts }) => {
                 continue;
               }
 
+              // Try loading metadata from IPFS cache
               const cacheKey = `${type}-${tokenId}`;
               let metadata;
               try {
@@ -50,6 +56,7 @@ const Marketplace = ({ contracts }) => {
                 metadata = { eventName: "Unknown", date: "N/A" };
               }
 
+              // Add to display list
               tickets.push({
                 type,
                 tokenId,
@@ -72,12 +79,14 @@ const Marketplace = ({ contracts }) => {
     setLoading(false);
   };
 
+  // Auto-fetch when contracts are loaded
   useEffect(() => {
     if (Object.keys(contracts).length) {
       fetchListedTickets();
     }
   }, [contracts]);
 
+  // Executes the purchase transaction
   const buyTicket = async (type, tokenId, price) => {
     const key = `${type}-${tokenId}`;
     setBuyingTokenId(key);
@@ -87,13 +96,15 @@ const Marketplace = ({ contracts }) => {
         value: ethers.utils.parseEther(price)
       });
       await tx.wait();
+
       toast.update(txToast, {
         render: "Ticket purchased!",
         type: "success",
         isLoading: false,
         autoClose: 3000
       });
-      fetchListedTickets(); // Refresh view
+
+      fetchListedTickets(); // Refresh after purchase
     } catch (err) {
       console.error("Purchase failed:", err);
       toast.update(txToast, {
@@ -112,6 +123,7 @@ const Marketplace = ({ contracts }) => {
       <h2>Marketplace</h2>
       {loading && <p className="loading">Loading tickets...</p>}
       {!loading && listedTickets.length === 0 && <p>No tickets listed for sale.</p>}
+
       <div className="grid">
         {listedTickets.map((ticket) => {
           const isProcessing = buyingTokenId === `${ticket.type}-${ticket.tokenId}`;
