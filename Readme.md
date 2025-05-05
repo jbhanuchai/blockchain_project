@@ -11,8 +11,6 @@ This project is a decentralized ticketing platform built using Ethereum smart co
 
 ## Demo Video
 
-[![Watch the Demo Video](https://img.youtube.com/vi/8McLZfgEbW4/0.jpg)](https://drive.google.com/file/d/1QOZqo9eZN7EVMDbJ0a_bIsXA-CJsik6v/view?usp=sharing)
-
 Click the thumbnail or [this link](https://drive.google.com/file/d/1QOZqo9eZN7EVMDbJ0a_bIsXA-CJsik6v/view?usp=sharing) to watch the full system walkthrough.
 
 ## Features
@@ -133,6 +131,7 @@ npm install
 
 # Configure Environment Variables
 # Create the following .env files in the respective folders:
+
 # backend/.env
 PINATA_JWT=your_pinata_jwt_token_here
 
@@ -141,20 +140,23 @@ REACT_APP_PINATA_JWT=your_pinata_jwt_token_here
 REACT_APP_SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
 REACT_APP_PRIVATE_KEY=your_private_key_here
 
-# Start Backend (Port 5001)
+# Deploy Smart Contracts to Sepolia (Run in backend folder)
+# Make sure .env contains valid RPC and PRIVATE KEY before running
+# Compile Smart Contracts (Backend)
 cd backend
-nodemon server.js
-
-# Start the Frontend
-cd frontend
-npm start
-
-# Deploy Smart Contracts to Sepolia
-# Make sure your .env contains valid RPC and private key.
+npx hardhat compile
 npx hardhat run scripts/deploy_standard.js --network sepolia
 npx hardhat run scripts/deploy-soulbound.js --network sepolia
 npx hardhat run scripts/deploy-royalty.js --network sepolia
 npx hardhat run scripts/deploy-dynamic.js --network sepolia
+
+# Start Backend Server (Port 5001)
+nodemon server.js
+
+# Open a new terminal, then start the Frontend
+cd frontend
+npm install  # if not already done
+npm start
 
 ```
 ## You're All Set!
