@@ -6,7 +6,8 @@ async function main() {
   console.log("Deploying SoulboundTicket from:", deployer.address);
 
   const Ticket = await hre.ethers.getContractFactory("SoulboundTicket");
-  const ticket = await Ticket.deploy(deployer.address); 
+
+  const ticket = await Ticket.deploy();
 
   await ticket.deployed();
   console.log("SoulboundTicket deployed to:", ticket.address);

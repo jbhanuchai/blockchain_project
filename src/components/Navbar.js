@@ -1,15 +1,47 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const Navbar = () => (
-  <nav style={{ padding: "10px", backgroundColor: "#222", color: "#fff" }}>
-    <Link to="/" style={{ marginRight: 10, color: "white" }}>Home</Link>
-    <Link to="/buy-ticket" style={{ marginRight: 10, color: "white" }}>Buy Ticket</Link>
-    <Link to="/my-tickets" style={{ marginRight: 10, color: "white" }}>My Tickets</Link>
-    <Link to="/resell-ticket" style={{ marginRight: 10, color: "white" }}>Resell</Link>
-    <Link to="/event-status" style={{ marginRight: 10, color: "white" }}>Admin</Link>
-    <Link to="/my-badge" style={{ marginRight: 10, color: "white" }}>My Badge</Link>
-  </nav>
-);
+// This component renders the top navigation bar for the application
+const NavBar = () => {
+  return (
+    <nav style={styles.nav}>
+      <div style={styles.links}>
+        {/* Navigation links to different routes in the app */}
+        <Link to="/" style={styles.link}>Home</Link>
+        <Link to="/buy-ticket" style={styles.link}>Buy Ticket</Link>
+        <Link to="/my-tickets" style={styles.link}>My Tickets</Link>
+        <Link to="/event-status" style={styles.link}>Admin</Link>
+        <Link to="/verify" style={styles.link}>Verify</Link>
+        <Link to="/my-badge" style={styles.link}>My Badge</Link>
+      </div>
+    </nav>
+  );
+};
 
-export default Navbar;
+// Inline styles for the navigation bar and links
+const styles = {
+  nav: {
+    backgroundColor: "#111",              
+    padding: "16px 32px",                   
+    display: "flex",                     
+    justifyContent: "flex-end",           
+    alignItems: "center",                 
+    position: "sticky",                   
+    top: 0,
+    zIndex: 1000,                           
+    boxShadow: "0 2px 6px rgba(0,0,0,0.15)", 
+  },
+  links: {
+    display: "flex",                    
+    gap: "24px",                            
+    flexWrap: "wrap",                     
+  },  
+  link: {
+    color: "#fff",                         
+    textDecoration: "none",                
+    fontSize: "1rem",                       
+    fontWeight: "500",                      
+  },
+};
+
+export default NavBar;

@@ -6,35 +6,36 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract DynamicTicket is ERC721URIStorage, Ownable {
     uint256 private _tokenIds;
-    mapping(uint256 => bool) private _used;
 
-    constructor(address initialOwner) ERC721("DynamicTicket", "DYTK") Ownable(initialOwner) {}
+    mapping(uint256 => bool) public used;
 
-    function mintTicket(address recipient, string memory tokenURI) public returns (uint256) {
+    constructor(address initialOwner) ERC721("DynamicTicket", "DTKT") Ownable(initialOwner) {}
+
+    function mintTicket(address recipient, string memory tokenURI) external onlyOwner returns (uint256) {
         uint256 newId = _tokenIds;
         _safeMint(recipient, newId);
         _setTokenURI(newId, tokenURI);
-        _tokenIds += 1;
+        _tokenIds++;
         return newId;
     }
 
-    function markAsUsed(uint256 tokenId) public {
-        require(_existsSafe(tokenId), "Token does not exist");
-        require(!_used[tokenId], "Ticket already used");
-        _used[tokenId] = true;
+    function updateMetadata(uint256 tokenId, string memory newURI) external onlyOwner {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        _setTokenURI(tokenId, newURI);
     }
 
-    function isUsed(uint256 tokenId) public view returns (bool) {
-        require(_existsSafe(tokenId), "Token does not exist");
-        return _used[tokenId];
+    function markAsUsed(uint256 tokenId, string memory usedURI) external onlyOwner {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(!used[tokenId], "Already marked used");
+        used[tokenId] = true;
+        _setTokenURI(tokenId, usedURI);
     }
 
-    function _existsSafe(uint256 tokenId) internal view returns (bool) {
-        // Try-catch pattern to safely check if token exists
-        try this.ownerOf(tokenId) returns (address) {
-            return true;
-        } catch {
-            return false;
-        }
+    function isUsed(uint256 tokenId) external view returns (bool) {
+        return used[tokenId];
     }
+    function totalSupply() public view returns (uint256) {
+        return _tokenIds;
+    }
+
 }
