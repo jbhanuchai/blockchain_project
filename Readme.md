@@ -1,4 +1,4 @@
-# NFT-Based Event Ticketing System (CS-5833 Final Project)
+# NFT-Based Event Ticketing System 
 
 ## Contributors
 - **Dhanushwi Arava**
